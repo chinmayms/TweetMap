@@ -23,16 +23,16 @@ def index(request):
 @csrf_protect
 def home(request):
     # import twitter keys and tokens
-    ckey = "lRpnCx9V3uT1k5haiOjgsMymg"
-    csecret = "GAVMJfzMf7lKcR3sUg70qDIdeccjyGJ5giFEUGdLBq3YtvKHt4"
-    atoken = "99720772-TiTD2K9Rv19Bid8Xm8My34GACinStkURjbMifzEEA"
-    asecret = "FBk6JORnaJ9vNnudanqg6fMAjktEK4UNbwKKQO6BVTSbl"
+    ckey = ""
+    csecret = ""
+    atoken = ""
+    asecret = ""
 
     # create instance of elasticsearch
     # es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
-    host = 'search-crtweetmap-ao63kddlivnkgfyddm3ggrosg4.us-west-2.es.amazonaws.com'
-    awsauth = AWS4Auth("AKIAIUE3INCBISG7S3NA", "ePipkepslQuHbUKaIPw0gLFo+yLId70OFpMxq4DR", 'us-west-2', 'es')
+    host = ''
+    awsauth = AWS4Auth("", "", 'us-west-2', 'es')
 
     es = elasticsearch.Elasticsearch(
         hosts=[{'host': host, 'port': 443}],

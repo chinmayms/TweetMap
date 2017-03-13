@@ -23,16 +23,17 @@ def index(request):
 @csrf_protect
 def home(request):
     # import twitter keys and tokens
-    ckey = ""
-    csecret = ""
-    atoken = ""
-    asecret = ""
+    ckey = "CKEY"
+    csecret = "CSECRET"
+    atoken = "ATOKEN"
+    asecret = "ASECRET"
 
     # create instance of elasticsearch
     # es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
-    host = ''
-    awsauth = AWS4Auth("", "", 'us-west-2', 'es')
+    host = 'AWS HOST_NAME'
+    awsauth = AWS4Auth("AWS ACCESS KEY", "AWS SECRET KEY", 'us-west-2', 'es')
+
 
     es = elasticsearch.Elasticsearch(
         hosts=[{'host': host, 'port': 443}],
@@ -41,6 +42,8 @@ def home(request):
         verify_certs=True,
         connection_class=elasticsearch.connection.RequestsHttpConnection
     )
+
+    query = str(request.POST.get('myword'))
 
     class TweetStreamListener(StreamListener):
         i = 0
@@ -59,19 +62,22 @@ def home(request):
 
             if (time.time() - self.start_time) < self.limit:
                 if 'user' in dict_data and dict_data['user']['location']:
+                    location = []
+                    location.append(geocoder.google(dict_data['user']['location']).latlng[0])
+                    location.append(geocoder.google(dict_data['user']['location']).latlng[1])
                     try:
                         es.index(index="sentiment",
                                  doc_type="test-type",
                                  id=self.i,
                                  body={"author": dict_data["user"]["screen_name"],
                                        "date": dict_data["created_at"],
-                                       "location": dict_data['user']['location'],
+                                       "location": dict_data["user"]["location"],
                                        "lat": geocoder.google(dict_data['user']['location']).latlng[0],
                                        "lng": geocoder.google(dict_data['user']['location']).latlng[1],
                                        "message": dict_data["text"]
                                        })
 
-                        print(es.get(index='sentiment', doc_type='test-type', id=self.i))
+                        # print(es.get(index='sentiment', doc_type='test-type', id=self.i))
 
                         self.i += 1
 
@@ -83,7 +89,10 @@ def home(request):
 
         # on failure
         def on_error(self, status):
-            print(status)
+            print("error")
+
+        def on_timeout(self):
+            print("Timeout")
 
 
     # create instance of the tweepy tweet stream listener
@@ -94,13 +103,13 @@ def home(request):
     auth.set_access_token(atoken, asecret)
 
     # create instance of the tweepy stream
-    stream = Stream(auth, listener)
+    stream = Stream(auth, listener,timeout=10)
 
+    try:
+        stream.filter(track=[query])
+    except:
+        print(listener.i)
 
-
-    query = str(request.POST.get('myword'))
-
-    stream.filter(track=[query])
 
     pass_list = {}
 
@@ -109,8 +118,19 @@ def home(request):
 
     for j in range(listener.i):
         a = es.get(index='sentiment', doc_type='test-type', id=j)
-
         pass_list['tweet'].append(a)
+
+    #Another way to retreive static pre-stored tweets, but we will not use non-realtime tweets hence, will just print them.
+
+    res = es.search(index="sentiment", doc_type="test-type", body={"query": {"match": {"message": "trump"}}})
+    print("%d documents found" % res['hits']['total'])
+    for doc in res['hits']['hits']:
+        print("%s) %s" % (doc['_id'], doc['_source']['message']))
+
+
+
+
+
 
 
 
